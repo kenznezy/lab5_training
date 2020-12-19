@@ -25,4 +25,7 @@ urlpatterns = [
     url(r'^([0-9]+)/get_mark/$',
         views.get_mark,
     name='get_mark'),
+    url(r'^admin/$', views.admin, name='admin'),
+    url(r'^post_riddle/$', views.post_riddle, name='post_riddle'),
 ]
+
