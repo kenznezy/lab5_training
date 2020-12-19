@@ -18,5 +18,11 @@ urlpatterns = [
     url(r'^([0-9]+)/msg_list/$',
         views.msg_list,
         name='msg_list'),
-
+    # отправка оценки
+    url(r'^([0-9]+)/post_mark/$',
+        views.post_mark,
+        name='post_mark'),
+    url(r'^([0-9]+)/get_mark/$',
+        views.get_mark,
+    name='get_mark'),
 ]

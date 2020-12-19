@@ -17,6 +17,8 @@ from django.contrib.auth.forms import PasswordChangeForm
 from .models import Message
 from datetime import datetime
 from django.http import JsonResponse
+from .models import Mark
+from django.db.models import Avg
 import json
 
 
@@ -51,7 +53,6 @@ def detail(request, riddle_id):
     error_message = None
     if "error_message" in request.GET:
         error_message = request.GET["error_message"]
-
     return render(
         request,
         "answer.html",
@@ -62,9 +63,29 @@ def detail(request, riddle_id):
             "latest_messages":
                 Message.objects
                     .filter(chat_id=riddle_id)
-                    .order_by('-pub_date')[:5]
+                    .order_by('-pub_date')[:5],
+            # кол-во оценок, выставленных пользователем
+            "already_rated_by_user":
+                Mark.objects
+                    .filter(author_id=request.user.id)
+                    .filter(riddle_id=riddle_id)
+                    .count(),
+            # оценка текущего пользователя
+            "user_rating":
+                Mark.objects
+                    .filter(author_id=request.user.id)
+                    .filter(riddle_id=riddle_id)
+                    .aggregate(Avg('mark'))
+                    ["mark__avg"],
+            # средняя по всем пользователям оценка
+            "avg_mark":
+                Mark.objects
+                    .filter(riddle_id=riddle_id)
+                    .aggregate(Avg('mark'))
+                    ["mark__avg"]
         }
     )
+
 
 
 # продолжение – на следующей странице
@@ -185,4 +206,20 @@ def msg_list(request, riddle_id):
             r['pub_date'].strftime(
                 '%d.%m.%Y %H:%M:%S'
             )
+    return JsonResponse(json.dumps(res), safe=False)
+
+def post_mark(request, riddle_id):
+    msg = Mark()
+    msg.author = request.user
+    msg.riddle = get_object_or_404(Riddle, pk=riddle_id)
+    msg.mark = request.POST['mark']
+    msg.pub_date = datetime.now()
+    msg.save()
+    return HttpResponseRedirect(app_url+str(riddle_id))
+
+def get_mark(request, riddle_id):
+    res = Mark.objects\
+            .filter(riddle_id=riddle_id)\
+            .aggregate(Avg('mark'))
+
     return JsonResponse(json.dumps(res), safe=False)
